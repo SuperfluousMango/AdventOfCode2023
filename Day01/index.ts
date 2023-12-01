@@ -4,9 +4,9 @@ console.log(`Puzzle A answer: ${puzzleA()}`);
 console.log(`Puzzle B answer: ${puzzleB()}`);
 
 function puzzleA() {
-    // const data = splitInput(inputData);
+    const data = splitInput(inputData);
 
-    // return data.reduce((acc, val) => val + acc, 0);
+    return data.reduce((acc, val) => val + acc, 0);
 }
 
 function puzzleB() {
@@ -23,11 +23,7 @@ function splitInput(data: string, mapLiteralNumbers = false): number[] {
         : origLines.map(line => line.replace(/\D/g, ''));
 
     return lines.map(line => line.split(''))
-        .map((digits, idx) => {
-            const val = Number(digits[0]) * 10 + Number(digits.slice(-1));
-            console.log(origLines[idx], digits.join(''), val);
-            return val;
-        });
+        .map(digits => Number(digits[0]) * 10 + Number(digits.slice(-1)));
 }
 
 function processLineForLiteralNumbers(line: string): string {
