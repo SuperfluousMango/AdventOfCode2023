@@ -8,23 +8,22 @@ function puzzleA() {
     const { seeds, seedToSoil } = splitInput(inputData);
 
     return Math.min(
-        ...seeds.map(s => seedToSoil.getChainedValue(s))
+        ...seeds.map(s => seedToSoil.getFullyMappedValue(s))
     );
 }
 
 function puzzleB() {
-    const { seeds: specialSeedList, seedToSoil } = splitInput(inputData);
-    let overallMin = Number.MAX_SAFE_INTEGER;
+    const { seeds, seedToSoil } = splitInput(inputData),
+        seedRanges: [number, number][] = [];
 
-    do {
-        const seedStart = specialSeedList.shift(),
-            seedRange = specialSeedList.shift(),
-            rangeMin = seedToSoil.getMinValueForRange(seedStart, seedStart + seedRange - 1);
+    while (seeds.length) {
+        const seedStart = seeds.shift(),
+            seedEnd = seedStart + seeds.shift() - 1;
+        seedRanges.push([seedStart, seedEnd]);
+    }
 
-        overallMin = Math.min(rangeMin, overallMin);
-    } while (specialSeedList.length);
-
-    return overallMin;
+    console.log(`seed ranges: ${seedRanges.flat().join(',')}`);
+    return seedToSoil.getMinValueForRanges(seedRanges);
 }
 
 function splitInput(data: string): { seeds: number[], seedToSoil }  {
@@ -42,37 +41,37 @@ function splitInput(data: string): { seeds: number[], seedToSoil }  {
     // soil-to-fertilizer
     lines.shift(); // header line
     const soilToFertilizer = buildMaps(lines, 'soil to fertilizer');
-    seedToSoil.setChainedMap(soilToFertilizer);
+    seedToSoil.setNextMap(soilToFertilizer);
     lines.shift(); // empty line
 
     // fertilizer-to-water
     lines.shift(); // header line
     const fertilizerToWater = buildMaps(lines, 'fertilizer to water');
-    soilToFertilizer.setChainedMap(fertilizerToWater);
+    soilToFertilizer.setNextMap(fertilizerToWater);
     lines.shift(); // empty line
 
     // water-to-light
     lines.shift(); // header line
     const waterToLight = buildMaps(lines, 'water to light');
-    fertilizerToWater.setChainedMap(waterToLight);
+    fertilizerToWater.setNextMap(waterToLight);
     lines.shift(); // empty line
 
     // light-to-temperature
     lines.shift(); // header line
     const lightToTemperature = buildMaps(lines, 'light to temp');
-    waterToLight.setChainedMap(lightToTemperature);
+    waterToLight.setNextMap(lightToTemperature);
     lines.shift(); // empty line
 
     // temperature-to-humidity
     lines.shift(); // header line
     const temperatureToHumidity = buildMaps(lines, 'temp to humidity');
-    lightToTemperature.setChainedMap(temperatureToHumidity);
+    lightToTemperature.setNextMap(temperatureToHumidity);
     lines.shift(); // empty line
 
     // humidity-to-location
     lines.shift(); // header line
     const humidityToLocation = buildMaps(lines, 'humidity to location');
-    temperatureToHumidity.setChainedMap(humidityToLocation);
+    temperatureToHumidity.setNextMap(humidityToLocation);
     lines.shift(); // empty line
 
     return {

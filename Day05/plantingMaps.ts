@@ -6,7 +6,7 @@ export interface PlantingMap {
 
 export class PlantingMaps {
     private maps: PlantingMap[] = [];
-    private chainedMap: PlantingMaps = null;
+    private nextMap: PlantingMaps = null;
 
     constructor(public name: string) { }
 
@@ -15,8 +15,8 @@ export class PlantingMaps {
         this.maps.sort((a, b) => a.start - b.start); // Ensures our maps are always in order
     }
 
-    setChainedMap(chainedMap: PlantingMaps): void {
-        this.chainedMap = chainedMap;
+    setNextMap(chainedMap: PlantingMaps): void {
+        this.nextMap = chainedMap;
     }
 
     private getMappedValue(val: number): number {
@@ -26,39 +26,26 @@ export class PlantingMaps {
             : val;
     }
 
-    getChainedValue(val: number): number {
+    getFullyMappedValue(val: number): number {
         val = this.getMappedValue(val);
-        return this.chainedMap
-            ? this.chainedMap.getChainedValue(val)
+        return this.nextMap
+            ? this.nextMap.getFullyMappedValue(val)
             : val;
     }
 
-    getMinValueForRange(rangeStart: number, rangeEnd: number): number {
-        const ranges = this.splitRangeIntoRanges(rangeStart, rangeEnd);
-        if (this.chainedMap) {
-            return Math.min(
-                ...ranges.map(r => {
-                    // console.log(`${this.name}: ${r.start}-${r.end}`);
-                    return this.chainedMap.getMinValueForRange(
-                        this.getMappedValue(r.start),
-                        this.getMappedValue(r.end)
-                    );
-                })
-            );
-        } else {
-            return Math.min(
-                ...ranges.map(r => r.start)
-                    .map(v => {
-                        const val = this.getMappedValue(v);
-                        // console.log(`${this.name}: ${v} => ${val}`);
-                        return val;
-                    })
-            );
-        }
+    getMinValueForRanges(inputRanges: [number, number][]): number {
+        const matchingRanges = inputRanges.flatMap(([start, end]) => this.splitRangeIntoRanges(start, end)),
+            mappedValues = matchingRanges.map(([start, end]): [number, number] => ([ this.getMappedValue(start), this.getMappedValue(end) ]));
+
+        console.log(`${this.name} ranges: ${mappedValues.flat().join(',')}`);
+        
+        return this.nextMap
+            ? this.nextMap.getMinValueForRanges(mappedValues)
+            : Math.min(...mappedValues.map(r => r[0])); // We're the bottom of the chain - no need to keep mapping, so only consider the lowest number in each output
     }
 
-    private splitRangeIntoRanges(rangeStart: number, rangeEnd: number): { start: number, end: number }[] {
-        const ranges: { start: number, end: number }[] = [];
+    private splitRangeIntoRanges(rangeStart: number, rangeEnd: number): [number, number][] {
+        const ranges: [number, number][] = [];
 
         do {
             const map = this.maps.find(m => m.start <= rangeStart && m.end >= rangeStart);
@@ -78,7 +65,7 @@ export class PlantingMaps {
                 end = nextMap ? nextMap.start - 1 : rangeEnd;
             }
 
-            ranges.push({ start, end });
+            ranges.push([ start, end ]);
             rangeStart = end + 1;
         } while (rangeStart < rangeEnd)
 
