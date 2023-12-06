@@ -1,37 +1,5 @@
 import { inputData } from './data';
-
-interface PlantingMap {
-    start: number;
-    end: number;
-    adjustment: number;
-}
-
-class PlantingMaps {
-    private maps: PlantingMap[] = [];
-    private chainedMap: PlantingMaps = null;
-
-    addMap(map: PlantingMap): void {
-        this.maps.push(map);
-    }
-
-    setChainedMap(chainedMap: PlantingMaps): void {
-        this.chainedMap = chainedMap;
-    }
-
-    private getMappedValue(val: number): number {
-        const map = this.maps.find(m => m.start <= val && m.end >= val);
-        return map
-            ? val + map.adjustment
-            : val;
-    }
-
-    getChainedValue(val: number): number {
-        val = this.getMappedValue(val);
-        return this.chainedMap
-            ? this.chainedMap.getChainedValue(val)
-            : val;
-    }
-}
+import { PlantingMaps } from './plantingMaps';
 
 console.log(`Puzzle A answer: ${puzzleA()}`);
 console.log(`Puzzle B answer: ${puzzleB()}`);
@@ -46,18 +14,17 @@ function puzzleA() {
 
 function puzzleB() {
     const { seeds: specialSeedList, seedToSoil } = splitInput(inputData);
-    let min = Number.MAX_SAFE_INTEGER;
+    let overallMin = Number.MAX_SAFE_INTEGER;
 
     do {
         const seedStart = specialSeedList.shift(),
-            seedRange = specialSeedList.shift();
+            seedRange = specialSeedList.shift(),
+            rangeMin = seedToSoil.getMinValueForRange(seedStart, seedStart + seedRange - 1);
 
-        for (let i = 0; i < seedRange; i++) {
-            min = Math.min(seedToSoil.getChainedValue(seedStart + i), min);
-        }
+        overallMin = Math.min(rangeMin, overallMin);
     } while (specialSeedList.length);
 
-    return min;
+    return overallMin;
 }
 
 function splitInput(data: string): { seeds: number[], seedToSoil }  {
@@ -69,42 +36,42 @@ function splitInput(data: string): { seeds: number[], seedToSoil }  {
 
     // seed-to-soil
     lines.shift(); // header line
-    const seedToSoil = buildMaps(lines);
+    const seedToSoil = buildMaps(lines, 'seed to soil');
     lines.shift(); // empty line
 
     // soil-to-fertilizer
     lines.shift(); // header line
-    const soilToFertilizer = buildMaps(lines);
+    const soilToFertilizer = buildMaps(lines, 'soil to fertilizer');
     seedToSoil.setChainedMap(soilToFertilizer);
     lines.shift(); // empty line
 
     // fertilizer-to-water
     lines.shift(); // header line
-    const fertilizerToWater = buildMaps(lines);
+    const fertilizerToWater = buildMaps(lines, 'fertilizer to water');
     soilToFertilizer.setChainedMap(fertilizerToWater);
     lines.shift(); // empty line
 
     // water-to-light
     lines.shift(); // header line
-    const waterToLight = buildMaps(lines);
+    const waterToLight = buildMaps(lines, 'water to light');
     fertilizerToWater.setChainedMap(waterToLight);
     lines.shift(); // empty line
 
     // light-to-temperature
     lines.shift(); // header line
-    const lightToTemperature = buildMaps(lines);
+    const lightToTemperature = buildMaps(lines, 'light to temp');
     waterToLight.setChainedMap(lightToTemperature);
     lines.shift(); // empty line
 
     // temperature-to-humidity
     lines.shift(); // header line
-    const temperatureToHumidity = buildMaps(lines);
+    const temperatureToHumidity = buildMaps(lines, 'temp to humidity');
     lightToTemperature.setChainedMap(temperatureToHumidity);
     lines.shift(); // empty line
 
     // humidity-to-location
     lines.shift(); // header line
-    const humidityToLocation = buildMaps(lines);
+    const humidityToLocation = buildMaps(lines, 'humidity to location');
     temperatureToHumidity.setChainedMap(humidityToLocation);
     lines.shift(); // empty line
 
@@ -114,8 +81,8 @@ function splitInput(data: string): { seeds: number[], seedToSoil }  {
     };
 }
 
-function buildMaps(lines: string[]): PlantingMaps {
-    const maps = new PlantingMaps
+function buildMaps(lines: string[], name: string): PlantingMaps {
+    const maps = new PlantingMaps(name);
     do {
         const line = lines.shift(),
             [destinationStart, sourceStart, rangeSize] = line.split(' ').map(Number),
