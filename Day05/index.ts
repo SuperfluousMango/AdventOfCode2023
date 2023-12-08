@@ -22,7 +22,6 @@ function puzzleB() {
         seedRanges.push([seedStart, seedEnd]);
     }
 
-    console.log(`seed ranges: ${seedRanges.flat().join(',')}`);
     return seedToSoil.getMinValueForRanges(seedRanges);
 }
 

@@ -1,3 +1,5 @@
+import { getRangeOverlap } from '../utils';
+
 export interface PlantingMap {
     start: number;
     end: number;
@@ -34,41 +36,48 @@ export class PlantingMaps {
     }
 
     getMinValueForRanges(inputRanges: [number, number][]): number {
-        const matchingRanges = inputRanges.flatMap(([start, end]) => this.splitRangeIntoRanges(start, end)),
-            mappedValues = matchingRanges.map(([start, end]): [number, number] => ([ this.getMappedValue(start), this.getMappedValue(end) ]));
-
-        console.log(`${this.name} ranges: ${mappedValues.flat().join(',')}`);
+        const mappedRanges = inputRanges
+            .flatMap(([start, end]) => this.splitRangeIntoMappedRanges(start, end))
+            .map(([start, end]) => [this.getMappedValue(start), this.getMappedValue(end)] as [number, number]);
         
         return this.nextMap
-            ? this.nextMap.getMinValueForRanges(mappedValues)
-            : Math.min(...mappedValues.map(r => r[0])); // We're the bottom of the chain - no need to keep mapping, so only consider the lowest number in each output
+            ? this.nextMap.getMinValueForRanges(mappedRanges)
+            : Math.min(...mappedRanges.map(r => r[0])); // We're the bottom of the chain - no need to keep mapping, so only consider the lowest number in each output
     }
 
-    private splitRangeIntoRanges(rangeStart: number, rangeEnd: number): [number, number][] {
-        const ranges: [number, number][] = [];
+    private splitRangeIntoMappedRanges(rangeStart: number, rangeEnd: number): [number, number][] {
+        const queue: [number, number][] = [[rangeStart, rangeEnd]],
+            outputRanges: [number, number][] = [];
 
         do {
-            const map = this.maps.find(m => m.start <= rangeStart && m.end >= rangeStart);
-            let start: number,
-                end: number;
-            
-            if (map) {
-                // Found an overlapping map range - store it
-                start = rangeStart;
-                end = Math.min(rangeEnd, map.end);
-            } else {
-                // Didn't find an overlapping map range - create a range for the unmapped values
-                // Means we need to find the first range that starts higher than we are now
-                // Good thing we're sorting our maps as we add them
-                const nextMap = this.maps.find(m => m.start > rangeStart);
-                start = rangeStart;
-                end = nextMap ? nextMap.start - 1 : rangeEnd;
+            const [start, end] = queue.shift();
+            let foundOverlap = false;
+
+            for (let m = 0; m < this.maps.length; m++) {
+                const overlap = getRangeOverlap(start, end, this.maps[m].start, this.maps[m].end);
+                if (overlap) {
+                    // Add the overlapping bit to the output and stuff any dangling edges back in the queue
+                    outputRanges.push([overlap[0], overlap[1]]);
+                    foundOverlap = true;
+
+                    if (start < overlap[0]) {
+                        queue.push([start, overlap[0] - 1]);
+                    }
+                    if (end > overlap[1]) {
+                        queue.push([overlap[1] + 1, end]);
+                    }
+
+                    // We know no more maps can overlap the overlapped piece of the range, and any leftover edges were put back in the queue
+                    break;
+                }
             }
 
-            ranges.push([ start, end ]);
-            rangeStart = end + 1;
-        } while (rangeStart < rangeEnd)
+            if (!foundOverlap) {
+                // Didn't find any matches, so the range goes through untouched
+                outputRanges.push([start, end]);
+            }
+        } while (queue.length);
 
-        return ranges;
+        return outputRanges;
     }
 }
