@@ -64,7 +64,7 @@ function puzzleB() {
         * BigInt(directions.length);
 }
 
-function splitInput(data: string, removeSpaces = false): [string, Map<string, [string, string]>] {
+function splitInput(data: string): [string, Map<string, [string, string]>] {
     const lines = data.split('\n'),
         directions = lines.shift();
     lines.shift(); // empty line;
