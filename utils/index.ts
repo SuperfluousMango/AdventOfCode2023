@@ -1,3 +1,15 @@
+export enum Dirs {
+    North = 0,
+    East = 1,
+    South = 2,
+    West = 3
+}
+
+export interface Pos {
+    x: number,
+    y: number
+}
+
 export function getAllNumbers(str: string): number[] {
     return Array.from(str.matchAll(/\d+/g))
         .map(m => m[0])
@@ -22,4 +34,20 @@ export function getRangeOverlap(range1Start: number, range1End: number, range2St
     return overlapExists
         ? [Math.max(range1Start, range2Start), Math.min(range1End, range2End)]
         : null;
+}
+
+export function getNewPosFromDir(pos: Pos, dir: Dirs): Pos {
+    const {x, y} = pos;
+    switch (dir) {
+        case Dirs.North:
+            return { x, y: y - 1 };
+        case Dirs.East:
+            return { x: x + 1, y };
+        case Dirs.South:
+            return { x, y: y + 1 };
+        case Dirs.West:
+            return { x: x - 1, y };
+        default:
+            return pos;
+    }
 }
