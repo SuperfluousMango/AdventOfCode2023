@@ -51,3 +51,16 @@ export function getNewPosFromDir(pos: Pos, dir: Dirs): Pos {
             return pos;
     }
 }
+
+export function memoize<Args extends unknown[], T>(fn: (...args: Args) => T): (...args: Args) => T {
+    const map = new Map<string, T>();
+
+    return (...args: Args) => {
+        const argsStr = JSON.stringify(args);
+        if (!map.has(argsStr)) {
+            map.set(argsStr, fn(...args));
+        }
+
+        return map.get(argsStr);
+    };
+}
