@@ -64,3 +64,21 @@ export function memoize<Args extends unknown[], T>(fn: (...args: Args) => T): (.
         return map.get(argsStr);
     };
 }
+
+export function rotateArray<T>(arr: T[][], degrees: number = 90): T[][] {
+    if (degrees <= 0) {
+        return arr;
+    }
+
+    let newArr = arr;
+    do {
+        const tempArr: T[][] = [];
+        for (let i = 0; i < arr[0].length; i++) {
+            tempArr[i] = newArr.map(row => row[i]).reverse();
+        }
+        newArr = tempArr;
+        degrees -= 90;
+    } while (degrees > 0);
+
+    return newArr;
+}
