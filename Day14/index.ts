@@ -1,4 +1,3 @@
-import { rotateArray } from '../utils';
 import { inputData } from './data';
 
 console.log(`Puzzle A answer: ${puzzleA()}`);
